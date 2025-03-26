@@ -54,12 +54,12 @@ struct lex_process;
 
 // Definição de ponteiros para funções.
 typedef char (*LEX_PROCESS_NEXT_CHAR) (struct lex_process* process);
-typedef char (*LEX_PROCESS_PEAK_CHAR) (struct lex_process* process);
-typedef char (*LEX_PROCESS_PUSH_CHAR) (struct lex_process* process);
+typedef char (*LEX_PROCESS_PEEK_CHAR) (struct lex_process* process);
+typedef void (*LEX_PROCESS_PUSH_CHAR) (struct lex_process* process, char c);
 
 struct lex_process_functions {
     LEX_PROCESS_NEXT_CHAR next_char;
-    LEX_PROCESS_PEAK_CHAR peak_char;
+    LEX_PROCESS_PEEK_CHAR peek_char;
     LEX_PROCESS_PUSH_CHAR push_char;
 };
 
@@ -104,7 +104,7 @@ struct compile_process
     int flags;
 
     /* LAB 2 */
-    struct pos;
+    struct pos pos;
 
     struct compile_prcess_imput_file
     {
