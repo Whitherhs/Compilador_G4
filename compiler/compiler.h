@@ -16,7 +16,7 @@
     case '6': \
     case '7': \
     case '8': \
-    case '9': 
+    case '9'
 
 
 struct pos{
@@ -26,8 +26,8 @@ struct pos{
 };
 
 enum {
-    LEXICAL_ANALYSYS_ALL_OK ,
-    LEXICAL_ANALYSYS_IMPUT_ERROR 
+    LEXICAL_ANALYSIS_ALL_OK ,
+    LEXICAL_ANALYSIS_IMPUT_ERROR 
 };
 
 enum{
