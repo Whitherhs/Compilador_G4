@@ -1,4 +1,5 @@
 #include "compiler.h"
+#include <stdlib.h>
 
 struct lex_process_functions compiler_lex_functions = {
     .next_char=compile_process_next_char,
