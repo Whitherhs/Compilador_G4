@@ -20,7 +20,7 @@ int compile_file(const char* filename, const char* out_finename, int flags) {
 
     if(!lex_process) return COMPILER_FAILED_WITH_ERRORS;
 
-    if(lex(lex_process) != LEXICAL_ANALYSYS_ALL_OK) return COMPILER_FAILED_WITH_ERRORS;
+    if(lex(lex_process) != LEXICAL_ANALYSIS_ALL_OK) return COMPILER_FAILED_WITH_ERRORS;
     /* Aqui entra parsing do código*/
 
     /* Aqui entra a geração de código*/
