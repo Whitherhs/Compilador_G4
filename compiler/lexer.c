@@ -1,6 +1,6 @@
 /* BEGIN – LAB 2 ----------------------------------------------*/
-#include "compiler.h"
 #include <string.h>
+#include "compiler.h"
 #include "helpers/vector.h"
 #include "helpers/buffer.h"
 
@@ -102,7 +102,7 @@ struct token* read_next_token() {
             break;
 
         default:
-            compiler_error(lex_process->compiler, "Token invalido!\n");
+            // compiler_error(lex_process->compiler, "Token invalido!\n");
             break;
     }
     return token;
