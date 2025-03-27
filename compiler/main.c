@@ -2,7 +2,7 @@
 #include <assert.h>
 #include "helpers/vector.h"
 #include "helpers/buffer.h"
-#include "teste.h"
+#include "compiler.h"
 
 void test_vector() {
     // Criando um vetor de inteiros
@@ -40,6 +40,16 @@ void test_vector() {
 }
 
 int main() {
-    test_vector();
+    printf("Compiladores - TURMA A/B - GRUPO 4\n\n");
+
+    int res = compile_file("./teste.c","./outtest",0);
+    if (res == COMPILER_FILE_COMPILED_OK){
+        printf("Todos os arquivos foram compilados com sucesso!\n");
+    } else if (res == COMPILER_FAILED_WITH_ERRORS){
+        printf("Erro de compilação");
+    } else {
+        printf("Erro de compilação");
+    }
+
     return 0;
 }
