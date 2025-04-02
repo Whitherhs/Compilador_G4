@@ -18,6 +18,38 @@
     case '8': \
     case '9'
 
+#define KEYWORD_CASE \
+    case 'unsigned': \
+    case 'signed':   \
+    case 'char':     \
+    case 'short':    \
+    case 'int':      \
+    case 'long':     \
+    case 'float':    \
+    case 'double':   \
+    case 'void':     \
+    case 'struct':   \
+    case 'union':    \
+    case 'static':   \
+    case 'return':   \
+    case 'include':  \
+    case 'sizeof':   \
+    case 'if':       \
+    case 'else':     \
+    case 'while':    \
+    case 'for':      \
+    case 'do':       \
+    case 'break':    \
+    case 'continue': \
+    case 'switch':   \
+    case 'case':     \
+    case 'default':  \
+    case 'goto':     \
+    case 'typedef':  \
+    case 'const':    \
+    case 'extern':   \
+    case 'restrict'
+
 
 struct pos{
     int line;
