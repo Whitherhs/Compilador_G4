@@ -82,6 +82,10 @@ struct token* token_make_number_for_value(unsigned long number) {
 struct token* token_make_number() {
     return token_make_number_for_value(read_number());
 }
+
+struct token* token_make_newline() {
+    return token_create(&(struct token){.type = TOKEN_TYPE_NEWLINE});
+}
 // Função responsável por ler o próximo token do arquivo.
 struct token* read_next_token() {
     struct token* token = NULL;
@@ -99,6 +103,11 @@ struct token* read_next_token() {
         case ' ':
         case '\t':
             token = handle_whitespace();
+            break;
+
+        case '\n':
+            nextc(); // Consome o '\n'
+            token = token_make_newline();
             break;
 
         default:
