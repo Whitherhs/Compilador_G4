@@ -56,6 +56,12 @@ static struct token* handle_whitespace() {
     nextc();
     return read_next_token();
 }
+static struct token* handle_newline() {
+    nextc();
+    printf("Token: \ n\n");
+    return token_create(&(struct token){.type = TOKEN_TYPE_NEWLINE});
+}
+
 const char* read_number_str() {
     const char* num = NULL;
     struct buffer* buffer = buffer_create();
@@ -78,14 +84,37 @@ unsigned long long read_number() {
 struct token* token_make_number_for_value(unsigned long number) {
     return token_create(&(struct token){.type = TOKEN_TYPE_NUMBER, .llnum = number});
 }
-
 struct token* token_make_number() {
     return token_make_number_for_value(read_number());
 }
 
-struct token* token_make_newline() {
-    return token_create(&(struct token){.type = TOKEN_TYPE_NEWLINE});
+const char* read_symbol_str() {
+    const char* sym = NULL;
+    struct buffer* buffer = buffer_create();
+    char c = peekc();
+    LEX_GETC_IF(buffer, c, (c == '{'  || c == '}'  || c == ':'  || c == ';'  || \
+                            c == '#'  || c == '\\' || c == ']'  || c == ')'));
+    
+    // Finaliza a string.
+    buffer_write(buffer, 0x00);
+
+    printf("Token: %s\n", buffer->data);
+    // Retorna o ponteiro para o buffer.
+    return buffer_ptr(buffer);
 }
+
+unsigned long long read_symbol() {
+    const char* s = read_symbol_str();
+    return atoll(s);
+}
+
+struct token* token_make_symbol_for_value(unsigned long symbol) {
+    return token_create(&(struct token){.type = TOKEN_TYPE_SYMBOL, .llnum = symbol});
+}
+struct token* token_make_symbol() {
+    return token_make_symbol_for_value(read_symbol());
+}
+
 // Função responsável por ler o próximo token do arquivo.
 struct token* read_next_token() {
     struct token* token = NULL;
@@ -99,15 +128,18 @@ struct token* read_next_token() {
         NUMERIC_CASE:
             token = token_make_number();
             break;
-
+        
+        SYMBOL_CASE:
+            token = token_make_symbol();
+            break;
+        
         case ' ':
         case '\t':
             token = handle_whitespace();
             break;
-
+        
         case '\n':
-            nextc(); // Consome o '\n'
-            token = token_make_newline();
+            token = handle_newline();
             break;
 
         default:
