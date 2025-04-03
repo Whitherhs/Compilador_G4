@@ -58,7 +58,6 @@ static struct token* handle_whitespace() {
 }
 static struct token* handle_newline() {
     nextc();
-    printf("Token: \ n\n");
     return token_create(&(struct token){.type = TOKEN_TYPE_NEWLINE});
 }
 
@@ -114,6 +113,33 @@ struct token* token_make_symbol_for_value(unsigned long symbol) {
 struct token* token_make_symbol() {
     return token_make_symbol_for_value(read_symbol());
 }
+/*
+unsigned long long read_string() {
+    struct buffer* buf = buffer_create();
+    char c = nextc();
+
+    while (nextc != '"'){
+        buffer_write(buf, c);
+        nextc();
+    }
+
+    if (nextc != '"'){
+        return NULL;
+    }
+
+    // Finaliza a string.
+    printf("Token: %s\n", buf->data);
+    // Retorna o ponteiro para o buffer.
+    return buffer_ptr(buf);
+}
+
+struct token* token_make_string_for_value(unsigned long string) {
+    return token_create(&(struct token){.type = TOKEN_TYPE_STRING, .llnum = string});
+}
+struct token* token_make_string() {
+    return token_make_string_for_value(read_string());
+}
+*/
 
 // Função responsável por ler o próximo token do arquivo.
 struct token* read_next_token() {
@@ -133,11 +159,16 @@ struct token* read_next_token() {
             token = token_make_symbol();
             break;
         
+        case '"':
+            //token = token_make_string();
+            break;
+
         case ' ':
         case '\t':
             token = handle_whitespace();
             break;
         
+        case '//':
         case '\n':
             token = handle_newline();
             break;
