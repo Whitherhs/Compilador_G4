@@ -172,6 +172,53 @@ struct token* token_make_symbol_for_value(unsigned long symbol) {
 struct token* token_make_symbol() {
     return token_make_symbol_for_value(read_symbol());
 }
+struct token* token_make_one_line_comment() {
+    struct buffer* buffer = buffer_create();
+    char c = 0;
+    LEX_GETC_IF(buffer, c, c != '\n' && c != EOF);
+
+    return token_create(&(struct token){.type = TOKEN_TYPE_COMMENT, .sval = buffer_ptr(buffer)});
+}
+
+struct token* token_make_multiline_comment() {
+    struct buffer* buffer = buffer_create();
+    char c = 0;
+    while (1) {
+        LEX_GETC_IF(buffer, c, c != '*' && c != EOF);
+
+        if (c == EOF) {
+            compiler_error(lex_process->compiler, "O comentario nao foi fechado\n");
+        } else if (c == '*') {
+            nextc(); // Pula para o próximo caractere
+            if (peekc() == '/') {
+                nextc(); // Finaliza o comentário
+                break;
+            }
+        }
+    }
+
+    return token_create(&(struct token){.type = TOKEN_TYPE_COMMENT, .sval = buffer_ptr(buffer)});
+}
+
+struct token* handle_comment() {
+    char c = peekc();
+    if (c == '/') {
+        nextc();
+        if (peekc() == '/') {
+            nextc();
+            return token_make_one_line_comment();
+        } else if (peekc() == '*') {
+            nextc();
+            return token_make_multiline_comment();
+        }
+
+        pushc('/');
+        return token_make_operator();
+    }
+
+    return NULL;
+}
+
 /*
 unsigned long long read_string() {
     struct buffer* buf = buffer_create();
@@ -229,7 +276,9 @@ struct token* read_next_token() {
             token = handle_whitespace();
             break;
         
-        case '//':
+        case '/':
+            token = handle_comment();
+            break;
         case '\n':
             token = handle_newline();
             break;
