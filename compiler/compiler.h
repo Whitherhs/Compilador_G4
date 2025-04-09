@@ -35,6 +35,23 @@ struct pos {
     case '\\':  \
     case ')'
 
+#define OPERATOR_CASE \
+    case '+': \
+    case '-': \
+    case '=': \
+    case '*': \
+    case '/': \
+    case '%': \
+    case '&': \
+    case '|': \
+    case '^': \
+    case '!': \
+    case '~': \
+    case '<': \
+    case '>': \
+    case '(': \
+    case '[': 
+    
 /*
 #define KEYWORD_CASE \
     case 'unsigned': \
