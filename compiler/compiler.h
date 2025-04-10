@@ -34,24 +34,30 @@ struct pos {
     case ']':   \
     case '\\':  \
     case ')'
+#define OPERATOR_or c == '+' || c ==  '-' || c ==  '*' || c ==  '>' || \
+                    c == '<' || c ==  '^' || c ==  '%' || c ==  '!' || \
+                    c == '=' || c ==  '~' || c ==  '|' || c ==  '&' || \
+                    c == '(' || c ==  '[' || c ==  ',' || c ==  '.' || c ==  '?' 
 
 #define OPERATOR_CASE \
     case '+': \
     case '-': \
-    case '=': \
     case '*': \
-    case '/': \
-    case '%': \
-    case '&': \
-    case '|': \
-    case '^': \
-    case '!': \
-    case '~': \
-    case '<': \
     case '>': \
+    case '<': \
+    case '^': \
+    case '%': \
+    case '!': \
+    case '=': \
+    case '~': \
+    case '|': \
+    case '&': \
     case '(': \
-    case '[': 
-    
+    case '[': \
+    case ',': \
+    case '.': \
+    case '?'
+
 /*
 #define KEYWORD_CASE \
     case 'unsigned': \
