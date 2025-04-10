@@ -1,6 +1,9 @@
 /* BEGIN – LAB 2 ----------------------------------------------*/
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h> 
+#include <ctype.h>
+#include <assert.h>
 #include "compiler.h"
 #include "helpers/vector.h"
 #include "helpers/buffer.h"
@@ -59,6 +62,9 @@ static struct token* handle_whitespace() {
 }
 static struct token* handle_newline() {
     nextc();
+    
+    printf("Uma linha foi pulada em alguma parte do codigo\n");
+
     return token_create(&(struct token){.type = TOKEN_TYPE_NEWLINE});
 }
 
@@ -88,63 +94,6 @@ struct token* token_make_number() {
     return token_make_number_for_value(read_number());
 }
 
-const char* operadores[] = {
-    "==", "!=", ">=", "<=", ">>", "<<", "&&", "||", "***",
-    "=", "-", "+", "*", ">", "<", "^", "%%", "!", "~", "|", "&",
-    "(", "[" 
-};
-int total_operadores_validos = sizeof(operadores_validos) / sizeof(operadores_validos[0]);
-
-int operador_valido(const char* str) {
-    for (int i = 0; i < total_operadores_validos; i++) {
-        if (strcmp(str, operadores_validos[i]) == 0) return 1;
-    }
-    return 0;
-}
-
-const char* read_operator_str() {
-    struct buffer* buffer = buffer_create();
-    char c1 = peekc();
-
-    if (is_eof()) return NULL;
-
-    buffer_write(buffer, nextc());
-
-    for (int i = 0; i < 2 && !is_eof(); i++) {
-        char c2 = peekc();
-        buffer_write(buffer, c2);
-
-        buffer_write(buffer, 0x00);
-        if (operador_valido(buffer->data)) {
-            nextc();
-        } else {
-            buffer->data[buffer->length - 1] = '\0';
-            buffer->length--;
-            break;
-        }
-    }
-
-    buffer_write(buffer, 0x00);
-    printf("Token: %s\n", buffer->data);
-    return buffer_ptr(buffer);
-}
-
-const char* read_operator() {
-    return read_operator_str();
-}
-
-struct token* token_make_operator_for_value(const char* op) {
-    return token_create(&(struct token){
-        .type = TOKEN_TYPE_OPERATOR,
-        .str = strdup(op)
-    });
-}
-
-struct token* token_make_operator() {
-    const char* op = read_operator();
-    if (!op) return NULL;
-    return token_make_operator_for_value(op);
-}
 
 const char* read_symbol_str() {
     const char* sym = NULL;
@@ -172,11 +121,13 @@ struct token* token_make_symbol_for_value(unsigned long symbol) {
 struct token* token_make_symbol() {
     return token_make_symbol_for_value(read_symbol());
 }
+
 struct token* token_make_one_line_comment() {
     struct buffer* buffer = buffer_create();
     char c = 0;
     LEX_GETC_IF(buffer, c, c != '\n' && c != EOF);
 
+    buffer_write(buffer, 0x00);
     return token_create(&(struct token){.type = TOKEN_TYPE_COMMENT, .sval = buffer_ptr(buffer)});
 }
 
@@ -196,7 +147,8 @@ struct token* token_make_multiline_comment() {
             }
         }
     }
-
+    buffer_write(buffer, 0x00);
+    
     return token_create(&(struct token){.type = TOKEN_TYPE_COMMENT, .sval = buffer_ptr(buffer)});
 }
 
@@ -213,82 +165,73 @@ struct token* handle_comment() {
         }
 
         pushc('/');
-        return token_make_operator();
+        return token_make_one_line_comment();
     }
 
     return NULL;
 }
 
-/*
-unsigned long long read_string() {
+static struct token *token_make_string(char start_delim, char end_delim)
+{
     struct buffer* buf = buffer_create();
+    assert(nextc() == start_delim); //verifica se o caracter inicial eh aspas duplas
     char c = nextc();
 
-    while (nextc != '"'){
+    for (; c != end_delim && c != EOF; c = nextc())
+    {
+        if (c =='\\')
+        {//retira o enter do final da string (se tiver)
+            continue;
+        }
         buffer_write(buf, c);
-        nextc();
     }
 
-    if (nextc != '"'){
-        return NULL;
-    }
-
-    // Finaliza a string.
+    buffer_write(buf, 0x00);
     printf("Token: %s\n", buf->data);
-    // Retorna o ponteiro para o buffer.
-    return buffer_ptr(buf);
+
+    struct token* token = token_create(&(struct token){.type = TOKEN_TYPE_STRING, .sval = buffer_ptr(buf)});
+    return token;
 }
 
-struct token* token_make_string_for_value(unsigned long string) {
-    return token_create(&(struct token){.type = TOKEN_TYPE_STRING, .llnum = string});
-}
-struct token* token_make_string() {
-    return token_make_string_for_value(read_string());
-}
-*/
 
 // Função responsável por ler o próximo token do arquivo.
 struct token* read_next_token() {
     struct token* token = NULL;
     char c = peekc();
+    token = handle_comment();
+    if (token) return token;
+
     switch (c)
     {
         case EOF:
             // Fim do arquivo.
             break;
-
         NUMERIC_CASE:
             token = token_make_number();
             break;
-        
         SYMBOL_CASE:
             token = token_make_symbol();
             break;
         OPERATOR_CASE:
-            token = token_make_operator();
+            //token = token_make_operator();
             break;
         case '"':
-            //token = token_make_string();
+            token = token_make_string('"','"');
             break;
-
         case ' ':
         case '\t':
             token = handle_whitespace();
             break;
-        
-        case '/':
-            token = handle_comment();
-            break;
         case '\n':
             token = handle_newline();
             break;
-
         default:
-            // compiler_error(lex_process->compiler, "Token invalido!\n");
+            compiler_error(lex_process->compiler, "Token invalido!\n");
             break;
     }
     return token;
 }
+
 int lex(struct lex_process* process) {
     process->current_expression_count = 0;
     process->parentheses_buffer = NULL;
