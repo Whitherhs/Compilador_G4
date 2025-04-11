@@ -193,6 +193,62 @@ static struct token *token_make_string(char start_delim, char end_delim)
     return token;
 }
 
+const char* read_operator_str() {
+    struct buffer* buffer = buffer_create();
+    char c = peekc();
+    if (c == EOF) return NULL;
+    buffer_write(buffer, c);
+    if (c == '?' || c == '^'|| c == '~'|| c == '('|| c == '['){
+        nextc();
+        buffer_write(buffer, 0x00);
+        printf("Token: %s\n", buffer->data);
+        return buffer_ptr(buffer);
+    }
+    char d = c;
+    nextc();
+    c = peekc();
+    if(d == c && c != EOF){
+        buffer_write(buffer, c);
+        if (c == '*'){
+            d = c;
+            nextc();
+            c = peekc();
+            if (c == '*' && c != EOF){
+                buffer_write(buffer, c);
+                nextc();
+                buffer_write(buffer, 0x00);
+                printf("Token: %s\n", buffer->data);
+                return buffer_ptr(buffer);
+            }
+        }
+        printf("Token: %s\n", buffer->data);
+        nextc();
+        buffer_write(buffer, 0x00);
+        return buffer_ptr(buffer);
+
+    }else if((d == '+' || d == '-'|| d == '*'|| d == '/'|| d == '!'|| d == '>'|| d == '<'|| d == '%') && c == '='){
+        buffer_write(buffer, c);
+        nextc();
+        printf("Token: %s\n", buffer->data);
+        buffer_write(buffer, 0x00);
+        return buffer_ptr(buffer);
+    }else{
+        printf("Token: %s\n", buffer->data);
+        buffer_write(buffer, 0x00);
+        return buffer_ptr(buffer);
+    }
+    return NULL;
+}
+
+struct token* token_make_operator_for_value(const char* op) {
+    return token_create(&(struct token){.type = TOKEN_TYPE_OPERATOR});
+}
+
+struct token* token_make_operator() {
+    const char* op = read_operator_str();
+    return token_make_operator_for_value(op);
+}
+
 
 // Função responsável por ler o próximo token do arquivo.
 struct token* read_next_token() {
@@ -213,7 +269,7 @@ struct token* read_next_token() {
             token = token_make_symbol();
             break;
         OPERATOR_CASE:
-            //token = token_make_operator();
+            token = token_make_operator();
             break;
         case '"':
             token = token_make_string('"','"');
