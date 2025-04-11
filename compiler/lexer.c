@@ -22,6 +22,21 @@ static char peekc() {
     return lex_process->function->peek_char(lex_process);
 }
 
+static void lex_new_expression (){
+    lex_process->current_expression_count++;
+    if (lex_process->current_expression_count == 1){
+        lex_process->parentheses_buffer = buffer_create();
+    }
+}
+
+static void lex_finish_expression (){
+    lex_process->current_expression_count--;
+
+    if (lex_process->current_expression_count < 0){
+        compiler_error(lex_process->compiler, "Voce fechou uma expressao nunca iniciada!");
+    }
+}
+
 static char nextc() {
     char c = lex_process->function->next_char(lex_process);
     lex_process->pos.col += 1;
@@ -96,18 +111,23 @@ struct token* token_make_number() {
 
 
 const char* read_symbol_str() {
-    const char* sym = NULL;
     struct buffer* buffer = buffer_create();
     char c = peekc();
-    LEX_GETC_IF(buffer, c, (c == '{'  || c == '}'  || c == ':'  || c == ';'  || \
-                            c == '#'  || c == '\\' || c == ']'  || c == ')'));
+    if (c != EOF && (c == '{'  || c == '}'  || c == ':'  || c == ';'  || c == '#'  || c == '\\' || c == ']'  || c == ')')){
+        buffer_write(buffer, c);
+        nextc();
+        if (c == ')'){
+            lex_finish_expression();
+        }
+        
+        // Finaliza a string.
+        buffer_write(buffer, 0x00);
     
-    // Finaliza a string.
-    buffer_write(buffer, 0x00);
-
-    printf("Token: %s\n", buffer->data);
-    // Retorna o ponteiro para o buffer.
-    return buffer_ptr(buffer);
+        printf("Token: %s\n", buffer->data);
+        // Retorna o ponteiro para o buffer.
+        return buffer_ptr(buffer);
+    }
+    return NULL;
 }
 
 unsigned long long read_symbol() {
@@ -193,11 +213,15 @@ static struct token *token_make_string(char start_delim, char end_delim)
     return token;
 }
 
+
 const char* read_operator_str() {
     struct buffer* buffer = buffer_create();
     char c = peekc();
     if (c == EOF) return NULL;
     buffer_write(buffer, c);
+    if (c == '('){
+        lex_new_expression();
+    }
     if (c == '?' || c == '^'|| c == '~'|| c == '('|| c == '['){
         nextc();
         buffer_write(buffer, 0x00);
