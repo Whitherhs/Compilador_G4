@@ -14,6 +14,8 @@
         nextc(); \
     }
 
+#define S_EQ(str, arg) (strcmp((str), (arg)) == 0)
+
 struct token* read_next_token();
 static struct lex_process* lex_process;
 static struct token tmp_token;
@@ -108,23 +110,7 @@ struct token* token_make_number_for_value(unsigned long number) {
 struct token* token_make_number() {
     return token_make_number_for_value(read_number());
 }
-static struct token* make_identifier_or_keyword() {
-    struct buffer* buffer = buffer_create();
-    char c;
-    LEX_GETC_IF(buffer, c, (c >= 'a' && c <= 'z') || 
-                          (c >= 'A' && c <= 'Z') || 
-                          (c >= '0' && c <= '9') || 
-                          (c == '_'));
 
-    buffer_write(buffer, 0x00);
-    printf("Token: %s\n", buffer->data);
-
-    if (is_keyword(buffer_ptr(buffer))) {
-        return token_create(&(struct token){.type=TOKEN_TYPE_KEYWORD, .sval=buffer_ptr(buffer)});
-    }
-
-    return token_create(&(struct token){.type=TOKEN_TYPE_IDENTIFIER, .sval=buffer_ptr(buffer)});
-}
 bool is_keyword(const char* str) {
     return S_EQ(str, "unsigned") ||
            S_EQ(str, "signed") ||
@@ -158,6 +144,27 @@ bool is_keyword(const char* str) {
            S_EQ(str, "extern") ||
            S_EQ(str, "retrict");
 }
+static struct token* make_identifier_or_keyword() {
+    struct buffer* buffer = buffer_create();
+    char c;
+    LEX_GETC_IF(buffer, c, (c >= 'a' && c <= 'z') || 
+                          (c >= 'A' && c <= 'Z') || 
+                          (c >= '0' && c <= '9') || 
+                          (c == '_'));
+
+    buffer_write(buffer, 0x00);
+    printf("Token: %s\n", buffer->data);
+
+    if (is_keyword(buffer_ptr(buffer))) {
+        return token_create(&(struct token){.type=TOKEN_TYPE_KEYWORD, .sval=buffer_ptr(buffer)});
+    }
+
+    return token_create(&(struct token){.type=TOKEN_TYPE_IDENTIFIER, .sval=buffer_ptr(buffer)});
+}
+
+struct token* read_special_token(){
+    char c = peekc();
+};
 
 
 const char* read_symbol_str() {
