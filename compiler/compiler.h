@@ -32,8 +32,9 @@ struct pos {
     case ';':   \
     case '#':   \
     case ']':   \
-    case '\\':  \
+    case '\\':   \
     case ')'
+
 #define OPERATOR_or c == '+' || c ==  '-' || c ==  '*' || c ==  '>' || \
                     c == '<' || c ==  '^' || c ==  '%' || c ==  '!' || \
                     c == '=' || c ==  '~' || c ==  '|' || c ==  '&' || \
@@ -47,15 +48,14 @@ struct pos {
     case '<': \
     case '^': \
     case '%': \
-    case '!': \
+    case '|': \
     case '=': \
     case '~': \
-    case '|': \
     case '&': \
     case '(': \
     case '[': \
-    case ',': \
     case '.': \
+    case ',': \
     case '?'
 
 enum {
