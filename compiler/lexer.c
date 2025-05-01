@@ -1,12 +1,13 @@
 /* BEGIN – LAB 2 ----------------------------------------------*/
 #include <string.h>
 #include <stdlib.h>
-#include <stdio.h> 
+#include <stdio.h>
 #include <ctype.h>
 #include <assert.h>
 #include "compiler.h"
 #include "helpers/vector.h"
 #include "helpers/buffer.h"
+
 
 #define LEX_GETC_IF(buffer, c, exp) \
     for (c = peekc(); exp; c = peekc()){ \
@@ -14,11 +15,14 @@
         nextc(); \
     }
 
+
 #define S_EQ(str, arg) (strcmp((str), (arg)) == 0)
+
 
 struct token* read_next_token();
 static struct lex_process* lex_process;
 static struct token tmp_token;
+
 
 // Pegar um caractere do arquivo, sem mudar a posição de leitura.
 static char peekc() {
@@ -38,6 +42,7 @@ static void pushc(char c) {
     lex_process->function->push_char(lex_process, c);
 }
 
+
 static struct pos lex_file_position() {
     return lex_process->pos;
 }
@@ -45,12 +50,15 @@ struct token* token_create(struct token* _token) {
     memcpy(&tmp_token, _token, sizeof(struct token));
     tmp_token.pos = lex_file_position();
 
+
     return &tmp_token;
 }
+
 
 static struct token* lexer_last_token() {
     return vector_back_or_null(lex_process->token_vec);
 }
+
 
 static void lex_new_expression (){
     lex_process->current_expression_count++;
@@ -61,6 +69,7 @@ static void lex_new_expression (){
 static void lex_finish_expression (){
     lex_process->current_expression_count--;
 
+
     if (lex_process->current_expression_count < 0){
         compiler_error(lex_process->compiler, "Voce fechou uma expressao nunca iniciada!");
     }
@@ -69,6 +78,7 @@ bool lex_is_in_expresssion() {
     return lex_process->current_expression_count > 0;
 }
 
+
 //token handle whitespace
 static struct token* handle_whitespace() {
     struct token* last_token = lexer_last_token();
@@ -76,15 +86,18 @@ static struct token* handle_whitespace() {
         last_token->whitespace = true;
     }
 
+
     nextc();
     return read_next_token();
 }
+
 
 //token new line
 struct token* token_make_newline() {
     nextc();
     return token_create(&(struct token){.type=TOKEN_TYPE_NEWLINE});
 }
+
 
 //token number
 const char* read_number_str() {
@@ -93,8 +106,10 @@ const char* read_number_str() {
     char c = peekc();
     LEX_GETC_IF(buffer, c, (c >= '0' && c <= '9'));
 
+
     // Finaliza a string.
     buffer_write(buffer, 0x00);
+
 
     printf("Token: %s\n", buffer->data);
     // Retorna o ponteiro para o buffer.
@@ -110,6 +125,7 @@ struct token* token_make_number_for_value(unsigned long number) {
 struct token* token_make_number() {
     return token_make_number_for_value(read_number());
 }
+
 
 //token identifier ou keyword
 bool is_keyword(const char* str) {
@@ -154,17 +170,20 @@ bool token_is_keyword(struct token* token, const char* str) {
 static struct token* make_identifier_or_keyword() {
     struct buffer* buffer = buffer_create();
     char c;
-    LEX_GETC_IF(buffer, c, (c >= 'a' && c <= 'z') || 
-                           (c >= 'A' && c <= 'Z') || 
-                           (c >= '0' && c <= '9') || 
+    LEX_GETC_IF(buffer, c, (c >= 'a' && c <= 'z') ||
+                           (c >= 'A' && c <= 'Z') ||
+                           (c >= '0' && c <= '9') ||
                            (c == '_'));
+
 
     buffer_write(buffer, 0x00);
     printf("Token: %s\n", buffer->data);
 
+
     if (is_keyword(buffer_ptr(buffer))) {
         return token_create(&(struct token){.type=TOKEN_TYPE_KEYWORD, .sval=buffer_ptr(buffer)});
     }
+
 
     return token_create(&(struct token){.type=TOKEN_TYPE_IDENTIFIER, .sval=buffer_ptr(buffer)});
 }
@@ -174,8 +193,10 @@ struct token* read_special_token(){
         return make_identifier_or_keyword();
     }
 
+
     return NULL;
 };
+
 
 //token symbol
 static struct token* token_make_symbol() {
@@ -184,17 +205,44 @@ static struct token* token_make_symbol() {
         lex_finish_expression();
     }
 
+
     struct token* token = token_create(&(struct token){.type=TOKEN_TYPE_SYMBOL, .cval=c});
     printf("Token: %c\n", c);
     return token;
 }
 
+
 //token operator ou string
 static const char* read_op() {
     struct buffer* buffer = buffer_create();
     char c = peekc();
-    LEX_GETC_IF(buffer, c, OPERATOR_or);
-
+    if(OPERATOR_or){
+        char d = c;
+        nextc();
+        c = peekc();
+        if (c == EOF) return NULL;
+        if(d == c){
+            d = c;
+            nextc();
+            c = peekc();
+            if (d == c && c == '*') nextc();
+            buffer_write(buffer, c);
+        }else if(c == '+' || c == '-'|| c == '*'|| c == '/'|| c == '!'|| c == '>'|| c == '<' || c == '%'){
+            d = c;
+            nextc();
+            c = peekc();
+            if (c == '=') nextc();
+            buffer_write(buffer, c);
+        }else if(c == '?'){
+            d = c;
+            nextc();
+            c = peekc();
+            if(c == ':') nextc();
+            buffer_write(buffer, c);
+        }else{
+        buffer_write(buffer, c);
+    }
+    }
     // Finaliza a string.
     buffer_write(buffer, 0x00);
     printf("Token: %s\n", buffer->data);
@@ -206,6 +254,7 @@ static struct token* token_make_operator() {
         lex_new_expression();
     }
 
+
     const char* op = read_op();
     struct token* token = token_create(&(struct token){.type=TOKEN_TYPE_OPERATOR, .sval=op});
     printf("Token: %s\n", op);
@@ -215,6 +264,7 @@ static struct token *token_make_string(char start_delim, char end_delim){
     struct buffer *buf = buffer_create();
     assert(nextc() == start_delim); // verifica se o caracter inicial eh aspas duplas
     char c = nextc();
+
 
     for (; c != end_delim && c != EOF; c = nextc())
     {
@@ -226,6 +276,7 @@ static struct token *token_make_string(char start_delim, char end_delim){
     }
     buffer_write(buf, 0x00);
     printf("Token: %s\n", buf->data);
+
 
     struct token* token = token_create(&(struct token){.type = TOKEN_TYPE_STRING, .sval = buffer_ptr(buf)});
     return token;
@@ -240,13 +291,16 @@ static struct token *token_make_operator_or_string(){
         }
     }
 
+
     struct token* token = token_create(&(struct token){.type = TOKEN_TYPE_STRING, .sval = read_op()});
     if (op == '(') {
         lex_new_expression();
     }
 
+
     return token;
 }
+
 
 //token comment
 struct token* token_make_one_line_comment() {
@@ -261,10 +315,12 @@ struct token* token_make_multiline_comment() {
     while(1) {
         LEX_GETC_IF(buffer, c, c != '*' && c != EOF);
 
+
         if (c == EOF) {
             compiler_error(lex_process->compiler, "O comentario nao foi fechado\n");
         } else if (c == '*') {
             nextc(); // Pula para o próximo caractere do arquivo.
+
 
             if (peekc() == '/') {
                 // Finaliza o comentário
@@ -273,6 +329,7 @@ struct token* token_make_multiline_comment() {
             }
         }
     }
+
 
     return token_create(&(struct token){.type = TOKEN_TYPE_COMMENT, .sval=buffer_ptr(buffer)});
 }
@@ -288,20 +345,25 @@ struct token* handle_comment() {
             return token_make_multiline_comment();
         }
 
+
         pushc('/');
         return token_make_operator_or_string();
     }
 
+
     return NULL;
 }
+
 
 // Função responsável por ler o próximo token do arquivo.
 struct token *read_next_token() {
     struct token *token = NULL;
     char c = peekc();
 
+
     token = handle_comment();
     if (token) return token;
+
 
     switch (c) {
         case EOF:
@@ -314,10 +376,6 @@ struct token *read_next_token() {
             break;
         SYMBOL_CASE:
             token = token_make_symbol();
-            break;
-        case '"':
-        case '\'':
-            token = token_make_string(c, c);
             break;
         case '\t':
         case ' ':
@@ -336,13 +394,16 @@ struct token *read_next_token() {
     return token;
 }
 
+
 int lex(struct lex_process* process) {
     process->current_expression_count = 0;
     process->parentheses_buffer = NULL;
     lex_process = process;
     process->pos.filename = process->compiler->cfile.abs_path;
 
+
     struct token* token = read_next_token();
+
 
     // Ler todos os tokens do arquivo de input
     while (token) {
@@ -350,6 +411,9 @@ int lex(struct lex_process* process) {
         token = read_next_token();
     }
 
+
     return LEXICAL_ANALYSIS_ALL_OK;
 }
 /* END – LAB 2 ----------------------------------------------*/
+
+
