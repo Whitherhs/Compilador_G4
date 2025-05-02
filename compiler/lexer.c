@@ -206,12 +206,12 @@ static const char* read_op() {
 	char d, c = peekc();
 
 	if (c == EOF) return NULL;
-	if (c == '+' || c ==  '-' || c ==  '*' || c ==  '>' || c == '<' || c ==  '^' || c == '%' || c ==  '!' || c == '=' || c ==  '~' || c ==  '|' || c ==  '&' ){
+	if (c == '+' || c ==  '-' || c ==  '*' || c ==  '>' || c == '<' || c ==  '^' || c == '%' || c ==  '!' || c == '=' || c ==  '~' || c ==  '|' || c ==  '&' && c != EOF){
 		d = c;
 		nextc(); // Consome o operador
 		buffer_write(buffer, d); // Consome e grava
 		c = peekc();
-		// Trata casos como '==', '==='.
+		// Trata o '=='.
 		if (c == d && c != EOF && d == '='){
 			d = c;
 			nextc(); // Consome o operador
@@ -231,13 +231,6 @@ static const char* read_op() {
 			nextc(); // Consome o operador
 			buffer_write(buffer, d); // Consome e grava
 			c = peekc();
-			// Trata o '==='.
-			if (d == '=' && c == '=') {
-				d = c;
-				nextc(); // Consome o operador
-				buffer_write(buffer, d); // Consome e grava
-				c = peekc();
-			}
 		}
 		// Trata casos como '++', '--', '&&', '||', '<<', '>>'.
 		else if(d == c && c != EOF && (d == '+' || d == '-' || d == '*' || d == '&' || d == '|' || d == '<' || d == '>' || d == '/')){
@@ -346,7 +339,7 @@ struct token* handle_comment() {
 struct token *read_next_token() {
 	struct token *token = NULL;
 	char c = peekc();
-
+	
 	token = handle_comment();
 	if (token) return token;
 
@@ -389,6 +382,9 @@ void print_token_list(struct lex_process *process) {
 		token = vector_at(process->token_vec, i);
 
 		switch (token->type) {
+			case EOF:
+				printf("EOF\n");
+				break;
 			case TOKEN_TYPE_IDENTIFIER:
 				printf("TOKEN ID:    %s\n", token->sval);
 				break;
@@ -401,7 +397,7 @@ void print_token_list(struct lex_process *process) {
 			case TOKEN_TYPE_COMMENT:
 				printf("TOKEN COMMT: %s\n", token->sval);
 				break;
-			case TOKEN_TYPE_NUMBER:
+			case TOKEN_TYPE_NUMBER:	
 				printf("TOKEN NUM:   %llu\n", token->cval);
 				break;
 			case TOKEN_TYPE_OPERATOR:
