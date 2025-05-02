@@ -1,4 +1,5 @@
 #include "compiler.h"
+#include "parser.h"
 #include <stdlib.h>
 #include <stdarg.h>
 
@@ -29,24 +30,24 @@ void compiler_warning(struct compile_process* compiler, const char* msg, ...){
 }
 /* End - LAB 3 --------------------------------------------------------------*/
 
-int compile_file(const char* filename, const char* out_finename, int flags) {
-
-    struct compile_process* process = compile_process_create(filename, out_finename, flags);
-    if (!process)
-    {
+int compile_file(const char* filename, const char* out_filename, int flags) {
+    struct compile_process* process = compile_process_create(filename, out_filename, flags);
+    if (!process) {
         return COMPILER_FAILED_WITH_ERRORS;
     }
-    
-    /* Aqui entra a analise lexica */
+
+    /* AQUI ENTRA A ANÁLISE LÉXICA */
     struct lex_process* lex_process = lex_process_create(process, &compiler_lex_functions, NULL);
 
-    if(!lex_process) return COMPILER_FAILED_WITH_ERRORS;
+    if (!lex_process) return COMPILER_FAILED_WITH_ERRORS;
 
-    if(lex(lex_process) != LEXICAL_ANALYSIS_ALL_OK) return COMPILER_FAILED_WITH_ERRORS;
-    /* Aqui entra parsing do código*/
+    if (lex(lex_process) != LEXICAL_ANALYSIS_ALL_OK) return COMPILER_FAILED_WITH_ERRORS;
+    process->token_vec = lex_process->token_vec;  /* LAB3: Adicionar */
 
-    /* Aqui entra a geração de código*/
+    /* AQUI ENTRA O PARSING DO CÓDIGO */
+    if (parse(process) != PARSE_ALL_OK) return COMPILER_FAILED_WITH_ERRORS;  /* LAB3: Adicionar */
+
+    /* AQUI ENTRA A GERAÇÃO DE CÓDIGO */
 
     return COMPILER_FILE_COMPILED_OK;
-    
 }
