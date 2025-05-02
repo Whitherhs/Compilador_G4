@@ -84,20 +84,61 @@ struct token* token_make_newline() {
 
 //token number
 const char* read_number_str() {
-	const char* num = NULL;
-	struct buffer* buffer = buffer_create();
-	char c = peekc();
-	LEX_GETC_IF(buffer, c, (c >= '0' && c <= '9'));
+    struct buffer* buffer = buffer_create();
+    char c = peekc();
 
-	// Finaliza a string.
-	buffer_write(buffer, 0x00);
+    if (c == '0') {
+        buffer_write(buffer, c);
+        nextc();
+        c = peekc();
 
-	// Retorna o ponteiro para o buffer.
-	return buffer_ptr(buffer);
+        if (c == 'x' || c == 'X') {
+            buffer_write(buffer, c);
+            nextc();
+            c = peekc();
+            while (isxdigit(c)) {
+                buffer_write(buffer, c);
+                nextc();
+                c = peekc();
+            }
+        } else if (c == 'b' || c == 'B') {
+            buffer_write(buffer, c);
+            nextc();
+            c = peekc();
+            while (c == '0' || c == '1') {
+                buffer_write(buffer, c);
+                nextc();
+                c = peekc();
+            }
+        } else {
+            // Trata número como decimal com zero à esquerda, ex: 0123
+            while (isdigit(c)) {
+                buffer_write(buffer, c);
+                nextc();
+                c = peekc();
+            }
+        }
+    } else {
+        while (isdigit(c)) {
+            buffer_write(buffer, c);
+            nextc();
+            c = peekc();
+        }
+    }
+
+    buffer_write(buffer, 0x00);
+    return buffer_ptr(buffer);
 }
 unsigned long long read_number() {
-	const char* s = read_number_str();
-	return atoll(s);
+    const char* s = read_number_str();
+
+    if (s[0] == '0' && (s[1] == 'x' || s[1] == 'X')) {
+        return strtoull(s + 2, NULL, 16); // hexadecimal
+    } else if (s[0] == '0' && (s[1] == 'b' || s[1] == 'B')) {
+        return strtoull(s + 2, NULL, 2); // binário
+    }
+
+    return strtoull(s, NULL, 10); // decimal
 }
 struct token* token_make_number_for_value(unsigned long number) {
 	return token_create(&(struct token){.type = TOKEN_TYPE_NUMBER, .llnum = number});
@@ -395,7 +436,7 @@ void print_token_list(struct lex_process *process) {
 				printf("TOKEN COMMT: %s\n", token->sval);
 				break;
 			case TOKEN_TYPE_NUMBER:	
-				printf("TOKEN NUM:   %llu\n", token->cval);
+				printf("TOKEN NUM:   %llu\n", token->llnum);
 				break;
 			case TOKEN_TYPE_OPERATOR:
 				printf("TOKEN OP:    %s\n", token->sval);
