@@ -381,10 +381,7 @@ void print_token_list(struct lex_process *process) {
 	for (int i = 0; i < process->token_vec->count; i++) {
 		token = vector_at(process->token_vec, i);
 
-		switch (token->type) {
-			case EOF:
-				printf("EOF\n");
-				break;
+		switch (token->type) {	;
 			case TOKEN_TYPE_IDENTIFIER:
 				printf("TOKEN ID:    %s\n", token->sval);
 				break;
