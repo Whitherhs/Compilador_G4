@@ -2,22 +2,167 @@
 #include "helpers/vector.h"
 
 static struct compile_process* current_process;
+static struct token* parser_last_token;
 
-int parse_next() {
+// Estrutura para passar comandos atraves de funcoes recursivas.
+struct history {
+    int flags;
+};
+
+void parse_expressionable(struct history* history);
+int parse_expressionable_single(struct history* history);
+
+struct history* history_begin(int flags) {
+    struct history* history = calloc(1, sizeof(struct history));
+    history->flags = flags;
+
+    return history;
+}
+
+struct history* history_down(struct history* history, int flags) {
+    struct history* new_history = calloc(1, sizeof(struct history));
+    memcpy(new_history, history, sizeof(struct history));
+    new_history->flags = flags;
+
+    return new_history;
+}
+
+static void parser_ignore_nl_or_comment(struct token* token) {
+    while (token && discart_token(token) ) {
+        // Pula o token que deve ser descartado no vetor.
+        vector_peek(current_process->token_vec);
+
+        // Pega o proximo token para ver se ele tambem sera descartado.
+        token = vector_peek_no_increment(current_process->token_vec);
+    }
+}
+static struct token* token_next() {
+    struct token* next_token = vector_peek_no_increment(current_process->token_vec);
+    parser_ignore_nl_or_comment(next_token);
+    current_process->pos = next_token->pos; // Atualiza a posicao do arquivo de compilacao.
+    parser_last_token = next_token;
+    return vector_peek(current_process->token_vec);
+}
+
+static struct token* token_peek_next() {
+    struct token* next_token = vector_peek_no_increment(current_process->token_vec);
+    parser_ignore_nl_or_comment(next_token);
+    
+    return vector_peek_no_increment(current_process->token_vec);
+}
+
+void parse_single_token_to_node() {
+        struct token* token = token_next();
+        struct node* node = NULL;
+
+        switch (token->type) {
+            case TOKEN_TYPE_NUMBER:
+                node = node_create(&(struct node){.type=NODE_TYPE_NUMBER, .llnum=token->llnum});
+                break;
+            case TOKEN_TYPE_IDENTIFIER:
+                node = node_create(&(struct node){.type=NODE_TYPE_IDENTIFIER, .sval=token->sval});
+                break;
+            case TOKEN_TYPE_STRING:
+                node = node_create(&(struct node){.type=NODE_TYPE_STRING, .sval=token->sval});
+                break;
+            default:
+                compiler_error(current_process, "Esse token nao pode ser convertido para node!\n");
+                break;
+    }
+}
+
+void parse_expressionable_for_op(struct history* history, const char* op) {
+    parse_expressionable(history);
+}
+
+void parse_exp_normal(struct history* history) {
+    struct token* op_token = token_peek_next();
+    const char *op = op_token->sval;
+    struct node* node_left = node_peek_expressionable_or_null();
+
+    if (!node_left) return;
+
+    // Retira da lista de tokens o token de operador. Ex: "123+456", retira o token "+".
+    token_next();
+
+    // Retira da lista de nodes, o ultimo node inserido.
+    node_pop();
+
+    node_left->flags |= NODE_FLAG_INSIDE_EXPRESSION;
+
+    // Nesse momento, temos o node da esquerda e o operador. Essa funcao ira criar o node da direita.
+    parse_expressionable_for_op(history_down(history, history->flags), op);
+    struct node* node_right = node_pop();
+    node_right->flags |= NODE_FLAG_INSIDE_EXPRESSION;
+
+    // Cria o node de expressao, passando o node da esquerda, node da direita e operador.
+    make_exp_node(node_left, node_right, op);
+    struct node* exp_node = node_pop();
+
+    // TODO: Inserir AQUI codigo para reordenador a expressao.
+    node_push(exp_node);
+}
+int parse_exp(struct history* history) {
+    parse_exp_normal(history);
     return 0;
 }
 
-int parse(struct compile_process* process) {      /* LAB3: Adicionar o prototipo no compiler.h */
-    struct node* node = NULL;
+int parse_expressionable_single(struct history* history) {
+    struct token* token = token_peek_next();
+
+    if (!token) return -1;
+
+    history->flags |= NODE_FLAG_INSIDE_EXPRESSION;
+    int res = -1;
+    switch (token->type){
+        case TOKEN_TYPE_NUMBER:
+            parse_single_token_to_node();
+            res = 0;
+            break;
+        case TOKEN_TYPE_OPERATOR:
+            parse_exp(history);
+            res = 0;
+            break;
+        default:
+            break;
+    }
+
+    return res;
+}
+
+void parse_expressionable(struct history* history){
+    while (parse_expressionable_single(history) == 0) {}
+}
+
+int parse_next(){
+    struct token* token = token_peek_next();
+    if (!token) return -1;
+
+    int res = 0;
+    switch (token->type) {
+        case TOKEN_TYPE_NUMBER:
+        case TOKEN_TYPE_IDENTIFIER:
+        case TOKEN_TYPE_STRING:
+            parse_expressionable(history_begin(0));
+            break;
+        default:
+            break;
+    }
+
+    return 0;
+}
+
+int parse(struct compile_process* process) { /*LAB3: Adicionar o prototipo no compiler.h */
     current_process = process;
-    
+    parser_last_token = NULL;
+    struct node* node = NULL;
+    node_set_vector(process->node_vec, process->node_tree_vec);
     vector_set_peek_pointer(process->token_vec, 0);
 
     while (parse_next() == 0) {
-        // node = node_peek();
+        node = node_peek();
         vector_push(process->node_tree_vec, &node);
-        break;
     }
-
+    
     return PARSE_ALL_OK;
 }
