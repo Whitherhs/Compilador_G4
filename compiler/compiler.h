@@ -219,6 +219,26 @@ struct node {
     };
 };
 
+
+/* FUNCOES DO ARQUIVO PARSER.C */
+int parse(struct compile_process* process);
+
+/* FUNCOES DO ARQUIVO TOKEN.C */
+bool token_is_keyword(struct token* token, const char* value);
+bool token_is_symbol(struct token* token, const char value);
+bool discart_token(struct token* token);
+
+/* FUNCOES DO ARQUIVO NODE.C */
+void node_set_vector(struct vector* vec, struct vector* root_vec);
+void node_push(struct node* node);
+struct node* node_peek_or_null();
+struct node* node_peek();
+struct node* node_pop();
+struct node* node_peek_expressionable_or_null();
+bool node_is_expressionable(struct node* node);
+void make_exp_node(struct node* node_left, struct node* node_right, const char* op);
+struct node* node_create(struct node* _node);
+
 /* FUNCOES DO ARQUIVO CPROCESS.C */
 char compile_process_next_char(struct lex_process* lex_process);
 char compile_process_peek_char(struct lex_process* lex_process);
