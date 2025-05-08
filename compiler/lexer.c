@@ -179,7 +179,7 @@ bool is_keyword(const char* str) {
 		   S_EQ(str, "extern") ||
 		   S_EQ(str, "retrict");
 }
-bool token_is_keyword(struct token* token, const char* str) {
+bool token_type_is_keyword(struct token* token, const char* str) {
 	if (token->type != TOKEN_TYPE_KEYWORD) {
 		return false;
 	}
@@ -316,7 +316,7 @@ static struct token* token_make_operator() {
 	// Tratar o caso do #include <abc.h>
 	if (c == '<') {
 		struct token* last_token = lexer_last_token();
-		if (token_is_keyword(last_token, "include")) {
+		if (token_type_is_keyword(last_token, "include")) {
 			return token_make_string('<', '>');
 		}
 	}
