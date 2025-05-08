@@ -3,8 +3,7 @@
 
 #include <stdio.h> 
 #include <stdlib.h>
-
-/* BEGIN - LAB 2 ---------------------------------*/
+#include <string.h>
 #include <stdbool.h>
 
 struct pos {
@@ -12,6 +11,9 @@ struct pos {
     int col;
     const char* filename;
 };
+
+#define S_EQ(str, str2) \
+        (str && str2 && (strcmp(str, str2) == 0))
 
 #define NUMERIC_CASE \
     case '0':   \
@@ -25,43 +27,39 @@ struct pos {
     case '8':   \
     case '9'
 
+enum {
+    LEXICAL_ANALYSIS_ALL_OK ,
+    LEXICAL_ANALYSIS_INPUT_ERROR
+};
+
+#define OPERATOR_CASE \
+    case '+':   \
+    case '-':   \
+    case '*':   \
+    case '>':   \
+    case '<':   \
+    case '^':   \
+    case '%':   \
+    case '!':   \
+    case '=':   \
+    case '~':   \
+    case '|':   \
+    case '&':   \
+    case '(':   \
+    case '[':   \
+    case ',':   \
+    case '.':   \
+    case '?'   
+
 #define SYMBOL_CASE \
     case '{':   \
     case '}':   \
     case ':':   \
     case ';':   \
     case '#':   \
-    case ']':   \
-    case '\\':   \
-    case ')'
-
-#define OPERATOR_or c == '+' || c ==  '-' || c ==  '*' || c ==  '>' || \
-                    c == '<' || c ==  '^' || c ==  '%' || c ==  '!' || \
-                    c == '=' || c ==  '~' || c ==  '|' || c ==  '&' || \
-                    c == '(' || c ==  '[' || c ==  ',' || c ==  '.' || c ==  '?' 
-
-#define OPERATOR_CASE \
-    case '+': \
-    case '-': \
-    case '*': \
-    case '>': \
-    case '<': \
-    case '^': \
-    case '%': \
-    case '|': \
-    case '=': \
-    case '~': \
-    case '&': \
-    case '(': \
-    case '[': \
-    case '.': \
-    case ',': \
-    case '?'
-
-enum {
-    LEXICAL_ANALYSIS_ALL_OK ,
-    LEXICAL_ANALYSIS_IMPUT_ERROR
-};
+    case '\\':  \
+    case ')':   \
+    case ']'
 
 enum {
     TOKEN_TYPE_KEYWORD ,
@@ -72,39 +70,6 @@ enum {
     TOKEN_TYPE_STRING ,
     TOKEN_TYPE_COMMENT ,
     TOKEN_TYPE_NEWLINE
-};
-
-// Definicao de tipos de nodes.
-enum {
-    NODE_TYPE_EXPRESSION,
-    NODE_TYPE_EXPRESSION_PARENTHESIS,
-    NODE_TYPE_NUMBER,
-    NODE_TYPE_IDENTIFIER,
-    NODE_TYPE_STRING,
-    NODE_TYPE_VARIABLE,
-    NODE_TYPE_VARIABLE_LIST,
-    NODE_TYPE_FUNCTION,
-    NODE_TYPE_BODY,
-    NODE_TYPE_STATEMENT_RETURN,
-    NODE_TYPE_STATEMENT_IF,
-    NODE_TYPE_STATEMENT_ELSE,
-    NODE_TYPE_STATEMENT_WHILE,
-    NODE_TYPE_STATEMENT_DO_WHILE,
-    NODE_TYPE_STATEMENT_FOR,
-    NODE_TYPE_STATEMENT_BREAK,
-    NODE_TYPE_STATEMENT_CONTINUE,
-    NODE_TYPE_STATEMENT_SWITCH,
-    NODE_TYPE_STATEMENT_CASE,
-    NODE_TYPE_STATEMENT_DEFAULT,
-    NODE_TYPE_STATEMENT_GOTO,
-    NODE_TYPE_UNARY,
-    NODE_TYPE_TENARY,
-    NODE_TYPE_LABEL,
-    NODE_TYPE_STRUCT,
-    NODE_TYPE_UNION,
-    NODE_TYPE_BRACKET,
-    NODE_TYPE_CAST,
-    NODE_TYPE_BLANK
 };
 
 struct token{ 
@@ -156,57 +121,6 @@ struct lex_process {
     void* private; //Dados privados que o lexer nao entende mas o programador entende.
 };
 
-enum {
-    PARSE_ALL_OK,
-    PARSE_GENERAL_ERROR
-};
-
-// Cada nó uma parte do inputfile.
-struct node {
-    int type;
-    int flags;
-    struct pos pos;
-
-    struct node_binded {
-        // Ponteiro para o body node.
-        struct node* owner;
-
-        // Ponteiro para a funcao que o no esta.
-        struct node* funtion;
-    } binded;
-
-    // Estrutura similar ao token
-    union {
-        char cval;
-        const char* sval;
-        unsigned int inum;
-        unsigned long lnum;
-        unsigned long long llnum;
-        void* any;
-    };
-};
-
-// Funcoes do arquivo cprocess.c
-char compile_process_next_char(struct lex_process* lex_process);
-char compile_process_peek_char(struct lex_process* lex_process);
-void compile_process_push_char(struct lex_process* lex_process, char c);
-
-// Funcoes do arquivo lex_process.c
-struct lex_process* lex_process_create(struct compile_process* compiler, struct lex_process_functions* functions, void *private);
-void lex_process_free(struct lex_process* process);
-void* lex_process_private(struct lex_process* process);
-struct vector* lex_process_tokens(struct lex_process* process);
-
-// Funcoes do arquivo lexer.c
-int lex(struct lex_process* process);
-
-// Funcoes do arquivo compiler.c
-void compiler_error(struct compile_process* compiler, const char* msg, ...);
-void compiler_warning(struct compile_process* compiler, const char* msg, ...);
-
-
-/* END - LAB 2 ---------------------------------*/
-
 enum{
     COMPILER_FILE_COMPILED_OK,
     COMPILER_FAILED_WITH_ERRORS
@@ -216,23 +130,138 @@ struct compile_process {
     // Como o arquivo deve ser compilado
     int flags;
 
-    /* LAB2: Adicionar */
+    /* LAB2: Adicionar*/
     struct pos pos;
 
-    struct compile_process_input_file {
+    struct compile_process_input_file{
         FILE* fp;
         const char* abs_path;
     } cfile;
 
-    struct vector* token_vec;       /* LAB3: Vetor de tokens da análise léxica */
-    struct vector* node_vec;        /* LAB3: Vetor de nodes da análise sintatica */
-    struct vector* node_tree_vec;   /* LAB3: Raiz da arvore de analise */
+    
+    struct vector* token_vec;       /* LAB3: Vetor de tokens da análise léxica*/
+    struct vector* node_vec;        /* LAB3: Vetor de nodes da análise sintatica*/
+    struct vector* node_tree_vec;   /* LAB3: Raiz da arvore de analise*/
 
     FILE* ofile;
 };
 
+enum {
+    NODE_TYPE_EXPRESSION,
+    NODE_TYPE_EXPRESSION_PARENTHESES,
+    NODE_TYPE_NUMBER,
+    NODE_TYPE_IDENTIFIER ,
+    NODE_TYPE_STRING ,
+    NODE_TYPE_VARIABLE ,
+    NODE_TYPE_VARIABLE_LIST ,
+    NODE_TYPE_FUNCTION ,
+    NODE_TYPE_BODY ,
+    NODE_TYPE_STATEMENT_RETURN ,
+    NODE_TYPE_STATEMENT_IF ,
+    NODE_TYPE_STATEMENT_ELSE ,
+    NODE_TYPE_STATEMENT_WHILE ,
+    NODE_TYPE_STATEMENT_DO_WHILE ,
+    NODE_TYPE_STATEMENT_FOR ,
+    NODE_TYPE_STATEMENT_BREAK ,
+    NODE_TYPE_STATEMENT_CONTINUE ,
+    NODE_TYPE_STATEMENT_SWITCH ,
+    NODE_TYPE_STATEMENT_CASE ,
+    NODE_TYPE_STATEMENT_DEFAULT ,
+    NODE_TYPE_STATEMENT_GOTO ,
+    NODE_TYPE_UNARY ,
+    NODE_TYPE_TENARY ,
+    NODE_TYPE_LABEL ,
+    NODE_TYPE_STRUCT ,
+    NODE_TYPE_UNION ,
+    NODE_TYPE_BRACKET ,
+    NODE_TYPE_CAST ,
+    NODE_TYPE_BLANK 
+};
 
+enum {
+    PARSE_ALL_OK,
+    PARSE_GENERAL_ERROR
+};
+
+enum {
+    NODE_FLAG_INSIDE_EXPRESSION = 0b00000001
+};
+
+struct node {
+    int type;
+    int flags;
+    struct pos pos;
+
+    struct node_binded {
+        // Ponteiro para o body node.
+        struct node* owner;
+
+        // Ponteiro para a funcao que o node esta.
+        struct node* funtion;
+    } binded;
+
+    // Estrutura similar ao token
+    union {
+        char cval;
+        const char *sval;
+        unsigned int inum;
+        unsigned long lnum;
+        unsigned long long llnum;
+        void* any;
+    };
+
+    union {
+        struct exp {
+            struct node* left;
+            struct node* right;
+            const char* op;
+        } exp;
+    };
+};
+
+/* FUNCOES DO ARQUIVO CPROCESS.C */
+char compile_process_next_char(struct lex_process* lex_process);
+char compile_process_peek_char(struct lex_process* lex_process);
+void compile_process_push_char(struct lex_process* lex_process, char c);
+
+/* FUNCOES DO ARQUIVO LEX_PROCESS.C */
+struct lex_process* lex_process_create(struct compile_process* compiler, struct lex_process_functions* functions, void *private);
+void lex_process_free(struct lex_process* process);
+void* lex_process_private(struct lex_process* process);
+struct vector* lex_process_tokens(struct lex_process* process);
+
+/* FUNCOES DO ARQUIVO LEXER.C */
+int lex(struct lex_process* process);
+
+/* FUNCOES DO ARQUIVO COMPILER.C */
 int compile_file(const char* filename, const char* out_finename, int flags);
 struct compile_process* compile_process_create(const char* filename, const char* filename_out, int flags);
+void compiler_error(struct compile_process* compiler, const char* msg, ...);
+void compiler_warning(struct compile_process* compiler, const char* msg, ...);
+
+/* CONTROI UM TOKEN A PARTIR DE UMA STRING */
+struct lex_process* tokens_build_for_string(struct compile_process* compiler, const char* str);
+
+/* FUNCOES DO ARQUIVO PARSER.C */
+int parse(struct compile_process* process);
+
+/* FUNCOES DO ARQUIVO TOKEN.C */
+bool token_is_keyword(struct token* token, const char* value);
+bool token_is_symbol(struct token* token, const char value);
+bool discart_token(struct token* token);
+
+/* FUNCOES DO ARQUIVO NODE.C */
+void node_set_vector(struct vector* vec, struct vector* root_vec);
+void node_push(struct node* node);
+struct node* node_peek_or_null();
+struct node* node_peek();
+struct node* node_pop();
+struct node* node_peek_expressionable_or_null();
+bool node_is_expressionable(struct node* node);
+void make_exp_node(struct node* node_left, struct node* node_right, const char* op);
+struct node* node_create(struct node* _node);
 
 #endif
+
+
+
