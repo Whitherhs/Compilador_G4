@@ -14,8 +14,6 @@
 		nextc(); \
 	}
 
-#define S_EQ(str, arg) (str && arg &&(strcmp((str), (arg)) == 0))
-
 struct token* read_next_token();
 static struct lex_process* lex_process;
 static struct token tmp_token;
