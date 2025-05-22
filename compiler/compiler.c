@@ -1,5 +1,5 @@
 #include "compiler.h"
-#include "parser.h"
+#include "parser.c"
 #include <stdlib.h>
 #include <stdarg.h>
 
@@ -16,7 +16,7 @@ void compiler_error(struct compile_process* compiler, const char* msg, ...){
     va_start(args, msg);
     vfprintf(stderr, msg, args);
     fprintf(stderr, " na linha %i, coluna %i, arquivo %s\n",compiler->pos.line, compiler->pos.col, compiler->pos.filename);
-
+ 
     exit(-1);
 }
 
@@ -35,7 +35,7 @@ int compile_file(const char* filename, const char* out_filename, int flags) {
     if (!process) {
         return COMPILER_FAILED_WITH_ERRORS;
     }
-
+    
     /* AQUI ENTRA A ANÁLISE LÉXICA */
     struct lex_process* lex_process = lex_process_create(process, &compiler_lex_functions, NULL);
 
