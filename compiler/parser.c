@@ -156,21 +156,6 @@ int parse_next(){
     return 0;
 }
 
-int parse(struct compile_process* process) { /*LAB3: Adicionar o prototipo no compiler.h */
-    current_process = process;
-    parser_last_token = NULL;
-    struct node* node = NULL;
-    node_set_vector(process->node_vec, process->node_tree_vec);
-    vector_set_peek_pointer(process->token_vec, 0);
-
-    while (parse_next() == 0) {
-        node = node_peek();
-        vector_push(process->node_tree_vec, &node);
-    }
-    
-    return PARSE_ALL_OK;
-}
-
 void parser_node_shift_children_left(struct node* node) {
     assert(node->type == NODE_TYPE_EXPRESSION);
     assert(node->exp.right->type == NODE_TYPE_EXPRESSION);
@@ -228,9 +213,29 @@ static int parser_get_precedence_for_operator(const char* op, struct expressiona
     return -1;
 }
 
-void print_tree(struct  node *node)
+void print_tree(struct  node *node, int level)
 {
-    /* data */
+    if (node == NULL){
+        return;
+    }
+    printf("|");
+    switch (node->type)
+    {
+        case NODE_TYPE_EXPRESSION_PARENTHESES:
+            printf("Node Expression: %s", node->sval ? node->sval : "null");
+            break;
+        
+        case NODE_TYPE_NUMBER:
+            printf("Node Expression: %s", node->llnum ? node->llnum : "null");
+            break;
+                    
+        default:
+            break;
+    }
+    level++;
+    print_tree(node, level);
+
+    return;
 }
 
 static bool parser_left_op_has_priority(const char* op_left, const char* op_right) {
@@ -246,4 +251,22 @@ static bool parser_left_op_has_priority(const char* op_left, const char* op_righ
     if (group_left->associativity == ASSOCIATIVITY_RIGHT_TO_LEFT) return false;
 
     return precedence_left <= precedence_right;
+}
+
+int parse(struct compile_process* process) { /*LAB3: Adicionar o prototipo no compiler.h */
+    current_process = process;
+    parser_last_token = NULL;
+    struct node* node = NULL;
+    node_set_vector(process->node_vec, process->node_tree_vec);
+    vector_set_peek_pointer(process->token_vec, 0);
+
+    while (parse_next() == 0) {
+        node = node_peek();
+        vector_push(process->node_tree_vec, &node);
+        
+        print_tree(node, 0)
+    }
+    
+
+    return PARSE_ALL_OK;
 }
