@@ -146,6 +146,19 @@ struct compile_process {
     FILE* ofile;
 };
 
+#define TOTAL_OPERADOR_GROUPS 14
+#define MAX_OPERATORS_IN_GROUP 12
+
+enum {
+    ASSOCIATIVITY_LEFT_TO_RIGTH,
+    ASSOCIATIVITY_RIGHT_TO_LEFT
+};
+
+struct expressionable_op_precedence_group {
+    char* operators[MAX_OPERATORS_IN_GROUP];
+    int associativity;
+};
+
 enum {
     NODE_TYPE_EXPRESSION,
     NODE_TYPE_EXPRESSION_PARENTHESES,
@@ -183,8 +196,59 @@ enum {
     PARSE_GENERAL_ERROR
 };
 
-enum {
-    NODE_FLAG_INSIDE_EXPRESSION = 0b00000001
+enum { 
+    DATATYPE_FLAG_IS_SIGNED = 0b00000001,
+    DATATYPE_FLAG_IS_STATIC = 0b00000010,
+    DATATYPE_FLAG_IS_CONST = 0b00000100,
+    DATATYPE_FLAG_IS_POINTER = 0b00001000,
+    DATATYPE_FLAG_IS_ARRAY = 0b00010000,
+    DATATYPE_FLAG_IS_EXTERN = 0b00100000,
+    DATATYPE_FLAG_IS_RESTRICT = 0b01000000,
+    DATATYPE_FLAG_IS_IGNORE_TYPE_CHECKING = 0b10000000,
+    DATATYPE_FLAG_IS_SECONDARY = 0b100000000,
+    DATATYPE_FLAG_IS_STRUCT_UNION_NO_NAME = 0b1000000000,
+    DATATYPE_FLAG_IS_LITERAL = 0b10000000000
+};
+
+enum { 
+    DATATYPE_VOID,
+    DATATYPE_CHAR,
+    DATATYPE_SHORT,
+    DATATYPE_INTEGER,
+    DATATYPE_LONG,
+    DATATYPE_FLOAT,
+    DATATYPE_DOUBLE,
+    DATATYPE_STRUCT,
+    DATATYPE_UNION,
+    DATATYPE_UNKNOWN
+};
+
+enum { 
+    DATATYPE_EXPECT_PRIMITIVE,
+    DATATYPE_EXPECT_UNION,
+    DATATYPE_EXPECT_STRUCT
+};
+
+struct datatype {
+    int flags;
+
+    // EX: long, int, float, etc.
+    int type;
+    const char* type_str;
+
+    // EX: long int, sendo int o secundário.
+    struct datatype* datatype_secondary;
+
+    // Tamanho do datatype. EX: long tem 8 bytes.
+    size_t size;
+
+    // Quantidades de ponteiros alinhados. Ex: int** a, pointer_depth == 2.
+    int pointer_depth;
+    
+    union { 
+        struct node* struct_node;
+        struct node* union_node;
+    };
 };
 
 struct node {
@@ -262,6 +326,10 @@ void compiler_warning(struct compile_process* compiler, const char* msg, ...);
 /* CONTROI UM TOKEN A PARTIR DE UMA STRING */
 struct lex_process* tokens_build_for_string(struct compile_process* compiler, const char* str);
 
+enum {
+    NODE_FLAG_INSIDE_EXPRESSION = 0b00000001
+};
+
 /* FUNCOES DO ARQUIVO PARSER.C */
 int parse(struct compile_process* process);
 
@@ -282,6 +350,5 @@ void make_exp_node(struct node* node_left, struct node* node_right, const char* 
 struct node* node_create(struct node* _node);
 
 #endif
-
 
 
