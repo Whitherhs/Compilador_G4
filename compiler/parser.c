@@ -209,8 +209,35 @@ int parser_get_random_type_index() {
 }
 
 struct token* parser_build_random_type_name() { // LAB5
-    char tmp_name[25];
-    sprintf(tmp_name, "customtypename_%i", parser_get_random_type_index());
+    static int num1 = 0, num2 = 0, num3 = 0;
+    static char letter1 = 'a', letter2 = 'a';
+
+    // Atualiza os índices para a próxima chamada
+    num3++;
+    if (num3 > 99) {
+        num3 = 0;
+        letter2++;
+        if (letter2 > 'z') {
+            letter2 = 'a';
+            num2++;
+            if (num2 > 99) {
+                num2 = 0;
+                letter1++;
+                if (letter1 > 'z') {
+                    letter1 = 'a';
+                    num1++;
+                    if (num1 > 99) {
+                        num1 = 0;
+                    }
+                }
+            }
+        }
+    }
+
+    // Gera o nome customtypename_<num3>_<letter2>_<num2>_<letter1>_<num1>
+    char tmp_name[64];
+    snprintf(tmp_name, sizeof(tmp_name), "customtypename_%d_%c_%d_%c_%d", num1, letter1, num2, letter2, num3);
+    
     char *sval = malloc(sizeof(tmp_name));
     strncpy(sval, tmp_name, sizeof(tmp_name));
 
