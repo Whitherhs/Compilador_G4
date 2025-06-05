@@ -1,4 +1,4 @@
-OBJECTS= ./build/compiler.o ./build/cprocess.o ./build/helpers/buffer.o ./build/helpers/vector.o ./build/lexer.o ./build/lex_process.o ./build/node.o ./build/token.o ./build/expressionable.o
+OBJECTS= ./build/compiler.o ./build/cprocess.o ./build/helpers/buffer.o ./build/helpers/vector.o ./build/lexer.o ./build/lex_process.o ./build/node.o ./build/token.o ./build/expressionable.o ./build/scope.o ./build/symresolver.o
 
 INCLUDES= -I./
 
@@ -23,8 +23,6 @@ all: ${OBJECTS}
 ./build/lex_process.o: ./lex_process.c
 	gcc ./lex_process.c ${INCLUDES} -o ./build/lex_process.o -g -c
 
-
-
 ./build/node.o: ./node.c
 	gcc ./node.c ${INCLUDES} -o ./build/node.o -g -c
 
@@ -33,6 +31,12 @@ all: ${OBJECTS}
 
 ./build/expressionable.o: ./expressionable.c
 	gcc ./expressionable.c ${INCLUDES} -o ./build/expressionable.o -g -c
+
+./build/scope.o: ./scope.c
+	gcc ./scope.c ${INCLUDES} -o ./build/scope.o -g -c
+
+./build/symresolver.o: ./symresolver.c
+	gcc ./symresolver.c ${INCLUDES} -o ./build/symresolver.o -g -c
 
 clean:
 	rm ./main
