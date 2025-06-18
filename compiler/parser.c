@@ -1,6 +1,10 @@
 #include "compiler.h"
 #include "helpers/vector.h"
 #include <assert.h> // LAB4
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <ctype.h>
 
 static struct compile_process* current_process;
 static struct token* parser_last_token;
@@ -452,14 +456,47 @@ void parse_variable(struct datatype* dtype, struct token* name_token, struct his
     make_variable_node_and_register(history, dtype, name_token, value_node);
 
     // INPLEMENTAR O CASO DE MÚLTIPLAS VARIÁVEIS DECLARADAS NA MESMA LINHA: EX: int a, b, c, d;
-
-    printf("%s",value_node->sval);
-
-    if (token_is_operator(token_peek_next(),","))
-    {
+    if (token_is_operator(token_peek_next(), ",")) {
         struct vector* varlist = vector_create(sizeof(struct node*));
-        
+        // Adiciona o primeiro node de variavel criado
+        vector_push(varlist, node_pop());
+
+        while (token_next_is_operator(",")) {
+            // Ignora a vírgula
+            token_next();
+
+            // O próximo token deve ser um identificador
+            struct token* next_name_token = token_peek_next();
+            if (!next_name_token || next_name_token->type != TOKEN_TYPE_IDENTIFIER) {
+                compiler_error(current_process, "Esperado o identificador depois da vírgula na declaração de variavel.");
+            }
+
+            token_next();
+
+            struct node* next_value_node = NULL;
+            if (token_next_is_operator("=")) {
+                token_next(); // Ignore o "=".
+                parse_expressionable_root(history);
+                next_value_node = node_pop();
+            }
+
+            // Adiciona a lista de nodes de variaveis criados
+            make_variable_node_and_register(history, dtype, next_name_token, next_value_node);
+            vector_push(varlist, node_pop()); // Add the new variable node to the list
+        }
+
+        // After processing all variables in the list, create a NODE_TYPE_VARIABLE_LIST
+        node_create(&(struct node){.type = NODE_TYPE_VARIABLE_LIST, .var_list = varlist});
+        node_push(node_peek()); // Push the new list node onto the stack
     }
+
+    // Lidar com o ";" final da declaração.
+    if (!token_next_is_operator(";")) {
+        compiler_error(current_process, "Expected ';' after variable declaration.");
+    }
+    token_next();
+    
+    return;
 }
 
 void parse_variable_function_or_struct_union(struct history* history) { // LAB5 - Parte 2
