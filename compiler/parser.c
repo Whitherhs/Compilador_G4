@@ -22,11 +22,12 @@ int parse_expressionable_single(struct history* history);
 
 void parse_identifier(struct history* history);
 static bool keyword_is_datatype(const char* val);
+bool token_is_identifier(struct token* token);
+static void expected_sym(char c);
 static bool is_keyword_variable_modifier(const char* val);
 bool token_is_primitive_keyword(struct token* token);
 void parser_get_datatype_tokens(struct token** datatype_token, struct token** datatype_secundary_token);
 int parser_datatype_expected_for_type_string(const char* str);
-int parser_get_random_type_index();
 struct token* parser_build_random_type_name();
 int parser_get_pointer_depth();
 bool parser_datatype_is_secondary_allowed_for_type(const char* type);
@@ -64,6 +65,7 @@ static void parser_ignore_nl_or_comment(struct token* token) {
         token = vector_peek_no_increment(current_process->token_vec);
     }
 }
+
 static struct token* token_next() {
     struct token* next_token = vector_peek_no_increment(current_process->token_vec);
     parser_ignore_nl_or_comment(next_token);
@@ -130,6 +132,7 @@ void parse_exp_normal(struct history* history) {
     // TODO: Inserir AQUI codigo para reordenador a expressao.
     node_push(exp_node);
 }
+
 int parse_exp(struct history* history) {
     parse_exp_normal(history);
     return 0;
@@ -188,6 +191,13 @@ static bool token_next_is_operator(const char* op) { // LAB5 - Parte 2
     return token_is_operator(token, op);
 }
 
+bool token_is_identifier(struct token* token) {
+    if (!token) {
+        return false;
+    }
+    return token->type == TOKEN_TYPE_IDENTIFIER;
+}
+
 // Essa funcao trata o caso de 2 datatypes seguidos. Ex: long int A.
 void parser_get_datatype_tokens(struct token** datatype_token, struct token** datatype_secundary_token) { // LAB5
     if (!datatype_token) return;
@@ -209,12 +219,6 @@ int parser_datatype_expected_for_type_string(const char* str) { // LAB5
         type = DATATYPE_EXPECT_STRUCT;
     }
     return type;
-}
-
-int parser_get_random_type_index() {
-    static int x = 0;
-    x++;
-    return x;
 }
 
 struct token* parser_build_random_type_name() { // LAB5
@@ -432,15 +436,13 @@ void make_variable_node_and_register(struct history* history, struct datatype* d
     node_push(var_node);
 }
 
-static void expected_sym(char c)
-{
-    struct  token *next_token = token_next();
+static void expected_sym(char c){
+    struct token *next_token = token_next();
 
-    if (!next_token || 
-            next_token->cval != TOKEN_TYPE_SYMBOL 
-            || next_token->cval != c)
-                compiler_error(current_process,"ERRO!");
+    if (!next_token || next_token->type != TOKEN_TYPE_SYMBOL || next_token->cval != c)
+        compiler_error(current_process, "ERRO: Esperado o simbolo '%c'!", c);
 }
+
 
 void parse_variable(struct datatype* dtype, struct token* name_token, struct history* history) { // LAB5 - Parte 2
     // TODO: Lidar a com a declaracao de vetores. Ex: int a[10].
@@ -453,9 +455,10 @@ void parse_variable(struct datatype* dtype, struct token* name_token, struct his
         value_node = node_pop();
     }
 
+    printf("\nCriando variavel: %s\n", name_token->sval);
+
     make_variable_node_and_register(history, dtype, name_token, value_node);
 
-    // INPLEMENTAR O CASO DE MÚLTIPLAS VARIÁVEIS DECLARADAS NA MESMA LINHA: EX: int a, b, c, d;
     if (token_is_operator(token_peek_next(), ",")) {
         struct vector* varlist = vector_create(sizeof(struct node*));
         // Adiciona o primeiro node de variavel criado
@@ -467,7 +470,7 @@ void parse_variable(struct datatype* dtype, struct token* name_token, struct his
 
             // O próximo token deve ser um identificador
             struct token* next_name_token = token_peek_next();
-            if (!next_name_token || next_name_token->type != TOKEN_TYPE_IDENTIFIER) {
+            if (!token_is_identifier(next_name_token)) {
                 compiler_error(current_process, "Esperado o identificador depois da vírgula na declaração de variavel.");
             }
 
@@ -480,9 +483,11 @@ void parse_variable(struct datatype* dtype, struct token* name_token, struct his
                 next_value_node = node_pop();
             }
 
+            printf("Criando variavel: %s\n", next_name_token->sval);
+
             // Adiciona a lista de nodes de variaveis criados
             make_variable_node_and_register(history, dtype, next_name_token, next_value_node);
-            vector_push(varlist, node_pop()); // Add the new variable node to the list
+            vector_push(varlist, node_pop());
         }
 
         // After processing all variables in the list, create a NODE_TYPE_VARIABLE_LIST
@@ -490,12 +495,8 @@ void parse_variable(struct datatype* dtype, struct token* name_token, struct his
         node_push(node_peek()); // Push the new list node onto the stack
     }
 
-    // Lidar com o ";" final da declaração.
-    if (!token_next_is_operator(";")) {
-        compiler_error(current_process, "Expected ';' after variable declaration.");
-    }
-    token_next();
-    
+    expected_sym(';'); 
+
     return;
 }
 
@@ -512,7 +513,6 @@ void parse_variable_function_or_struct_union(struct history* history) { // LAB5 
 
     parse_variable(&dtype, name_token, history);
 }
-
 
 int parse_expressionable_single(struct history* history) {
     struct token* token = token_peek_next();
@@ -631,8 +631,7 @@ static int parser_get_precedence_for_operator(const char* op, struct expressiona
     return -1;
 }
 
-void print_tree(struct  node *node, int level)
-{
+void print_tree(struct  node *node, int level){ 
     if (node == NULL) return;
 
     // Imprime indentação baseada no nível
