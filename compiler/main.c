@@ -5,7 +5,7 @@
 #include "compiler.h"
 
 int main() {
-    printf("Compiladores - TURMA A/B - GRUPO 4\n\n");
+    printf("Compiladores - TURMA A - GRUPO 4\n\n");
 
     int res = compile_file("./teste.c","./outtest",0);
     if (res == COMPILER_FILE_COMPILED_OK){
